@@ -370,9 +370,13 @@ def get_fund_nav_detail(fund_code: str) -> dict:
     if acc_match:
         try:
             acc_data = json.loads(acc_match.group(1))
-            if acc_data:
-                result["acc_nav"] = str(acc_data[-1].get("y", ""))
-        except (json.JSONDecodeError, IndexError, KeyError):
+            if acc_data and isinstance(acc_data, list):
+                last_item = acc_data[-1]
+                if isinstance(last_item, dict):
+                    result["acc_nav"] = str(last_item.get("y", ""))
+                elif isinstance(last_item, (int, float)):
+                    result["acc_nav"] = str(last_item)
+        except (json.JSONDecodeError, IndexError, KeyError, TypeError):
             pass
 
     # 判断是否获取到了有效数据
