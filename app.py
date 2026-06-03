@@ -653,7 +653,7 @@ def render_sidebar():
     with st.expander(_ABOUT_EXPANDER, expanded=False):
         st.markdown(_ABOUT_TEXT)
         st.markdown("---")
-        st.markdown(_DISCLAIMER_HTML, unsafe_allow_html=True)
+        st.markdown(_DISCLAIMER_TEXT, unsafe_allow_html=True)
 
 
 # ==================== Mode 1: Chat Q&A (v2.0) ====================
