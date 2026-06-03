@@ -328,3 +328,229 @@ def analyze_fund_trend(fund_code: str, history_data: List[Dict]) -> str:
         temperature=0.5,
         max_tokens=2048,
     )
+
+
+# ============================================================
+# 6. 带参考链接的基金知识问答
+# ============================================================
+
+def answer_question_with_references(
+    question: str,
+    chat_history: Optional[List[Dict[str, str]]] = None,
+) -> str:
+    """
+    带参考链接的基金知识问答 —— 在回答中附带真实可访问的学习资源链接
+
+    参数:
+        question: 用户提出的问题（自然语言）
+        chat_history: 历史对话记录，用于多轮对话上下文
+
+    返回:
+        AI 回答文本（包含学习资源链接）
+    """
+    if chat_history is None:
+        chat_history = []
+
+    system_prompt = (
+        "你是 FundWise 基金学习助手，专门帮助零基础用户学习基金知识。\n\n"
+        "要求：\n"
+        "1. 用通俗易懂的大白话回答，避免使用过多专业术语\n"
+        "2. 多举生活中的例子来帮助理解\n"
+        "3. 不推荐任何具体的基金产品\n"
+        "4. 不预测任何基金的涨跌\n"
+        "5. 回答简洁有条理，分段清晰\n"
+        "6. 如果涉及风险，务必提醒用户投资有风险\n"
+        "7. 面向中国普通投资者，用人民币、A股等熟悉的场景举例\n"
+        "8. 在回答中，如果提到了具体的学习资源（文章、视频、教程），请提供真实的、可直接访问的网页链接\n"
+        "9. 链接格式：[资源名称](URL)\n"
+        "10. 只提供真实有效的链接，不要编造URL\n"
+        "11. 如果不确定具体链接，可以推荐知名基金学习网站如天天基金、雪球、知乎基金板块等"
+    )
+
+    return _chat_completion(
+        system_prompt=system_prompt,
+        user_message=question,
+        chat_history=chat_history,
+    )
+
+
+# ============================================================
+# 7. 多基金对比分析
+# ============================================================
+
+def compare_funds(fund_data_list: List[Dict]) -> str:
+    """
+    多基金对比分析 —— 对比多只基金的表现、类型、风险特征
+
+    参数:
+        fund_data_list: 多只基金的数据列表，每条记录建议包含：
+            - fund_name: 基金名称
+            - fund_code: 基金代码
+            - nav: 单位净值
+            - nav_change_percent: 涨跌幅
+            - type: 基金类型
+            - 其他可选字段（如成立时间、规模、基金经理等）
+
+    返回:
+        对比分析文本（包含风险提示）
+    """
+    system_prompt = (
+        "你是一位资深的基金分析师，擅长对多只基金进行客观对比分析。\n\n"
+        "要求：\n"
+        "1. 对比分析多只基金的表现、类型、风险特征\n"
+        "2. 用表格或列表形式对比关键指标\n"
+        "3. 给出适合不同投资者的建议\n"
+        "4. 不推荐具体买入，只做客观对比\n"
+        "5. 末尾加风险提示：以上对比仅供参考，不构成投资建议，基金投资有风险"
+    )
+
+    data_text = json.dumps(fund_data_list, ensure_ascii=False, indent=2)
+
+    user_message = (
+        f"请对比分析以下多只基金：\n\n{data_text}\n\n"
+        "请从表现、类型、风险特征等维度进行客观对比。"
+    )
+
+    return _chat_completion(
+        system_prompt=system_prompt,
+        user_message=user_message,
+        temperature=0.5,
+        max_tokens=2048,
+    )
+
+
+# ============================================================
+# 8. 带链接的智能学习建议
+# ============================================================
+
+def generate_learning_plan_with_links(
+    user_level: str,
+    interests: List[str],
+    chat_history: Optional[List[Dict[str, str]]] = None,
+) -> str:
+    """
+    带链接的智能学习建议 —— 在学习计划中为每个阶段推荐具体可访问的学习资源链接
+
+    参数:
+        user_level: 用户水平，如 "零基础"、"入门"、"进阶"、"高手"
+        interests: 用户感兴趣的主题列表，如 ["指数基金", "定投", "债券基金"]
+        chat_history: 历史对话记录，用于了解用户已学内容和疑问
+
+    返回:
+        个性化学习计划文本（包含学习资源链接）
+    """
+    if chat_history is None:
+        chat_history = []
+
+    system_prompt = (
+        "你是一位基金教育规划师，擅长为不同水平的投资者制定学习计划。\n\n"
+        "要求：\n"
+        "1. 根据用户的水平和兴趣，制定循序渐进的学习计划\n"
+        "2. 每个学习阶段包含：主题、学习内容概要、推荐资源类型（书籍/视频/文章）、预计学习时间\n"
+        "3. 用鼓励性的语气，让用户觉得学习基金并不难\n"
+        "4. 不推荐具体基金产品\n"
+        "5. 计划要实际可行，不要安排过多内容\n"
+        "6. 考虑用户已有的对话历史，避免重复已掌握的内容\n"
+        "7. 为每个学习阶段推荐具体可访问的网页链接\n"
+        "8. 推荐真实有效的学习资源链接（如天天基金学堂、知乎基金话题、B站基金UP主等）\n"
+        "9. 链接格式：[资源名称](URL)"
+    )
+
+    interests_text = "、".join(interests) if interests else "基金基础知识"
+
+    user_message = (
+        f"我的基金学习水平：{user_level}\n"
+        f"我感兴趣的主题：{interests_text}\n\n"
+        "请为我制定一个个性化的基金学习计划，并为每个阶段推荐具体的学习资源链接。"
+    )
+
+    return _chat_completion(
+        system_prompt=system_prompt,
+        user_message=user_message,
+        chat_history=chat_history,
+        temperature=0.7,
+        max_tokens=2048,
+    )
+
+
+# ============================================================
+# 9. 多篇总结综合
+# ============================================================
+
+def combine_summaries(summaries: List[str]) -> str:
+    """
+    多篇总结综合 —— 综合多篇基金学习内容产出新的总结
+
+    参数:
+        summaries: 多篇总结的文本列表
+
+    返回:
+        综合总结文本
+    """
+    system_prompt = (
+        "你是一位基金学习内容分析专家，擅长综合多篇内容产出高质量总结。\n\n"
+        "要求：\n"
+        "1. 综合分析多篇基金学习内容\n"
+        "2. 找出共同观点和不同观点\n"
+        "3. 给出综合性的学习建议\n"
+        "4. 按结构化格式输出"
+    )
+
+    summaries_text = "\n\n---\n\n".join(
+        f"【第 {i + 1} 篇总结】\n{s}" for i, s in enumerate(summaries)
+    )
+
+    user_message = (
+        f"以下是多篇基金学习内容的总结，请综合分析：\n\n"
+        f"{summaries_text}\n\n"
+        "请综合以上内容，找出共同观点和不同观点，并给出综合性的学习建议。"
+    )
+
+    return _chat_completion(
+        system_prompt=system_prompt,
+        user_message=user_message,
+        temperature=0.5,
+        max_tokens=2048,
+    )
+
+
+# ============================================================
+# 10. 多基金走势对比分析
+# ============================================================
+
+def analyze_multi_fund_trend(fund_data_list: List[Dict]) -> str:
+    """
+    多基金走势对比分析 —— 对比分析多只基金的历史走势差异
+
+    参数:
+        fund_data_list: 多只基金的历史数据列表，每条记录包含：
+            - fund_code: 基金代码
+            - fund_name: 基金名称
+            - history: 历史净值数据列表，每条包含 date、nav 等字段
+
+    返回:
+        走势对比分析文本（包含风险提示）
+    """
+    system_prompt = (
+        "你是一位专业的基金分析师，擅长对比分析多只基金的历史走势。\n\n"
+        "要求：\n"
+        "1. 对比分析多只基金的走势差异\n"
+        "2. 分析哪只更稳健、哪只波动更大\n"
+        "3. 不预测未来\n"
+        "4. 末尾加风险提示：以上分析仅基于历史数据，不代表未来表现。"
+        "基金投资有风险，过往业绩不预示未来收益。请根据自身风险承受能力谨慎决策。"
+    )
+
+    data_text = json.dumps(fund_data_list, ensure_ascii=False, indent=2)
+
+    user_message = (
+        f"请对比分析以下多只基金的历史走势：\n\n{data_text}\n\n"
+        "请从走势差异、稳健性、波动性等维度进行对比分析。"
+    )
+
+    return _chat_completion(
+        system_prompt=system_prompt,
+        user_message=user_message,
+        temperature=0.5,
+        max_tokens=2048,
+    )
